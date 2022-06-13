@@ -1,4 +1,4 @@
-import numpy as np
+
 import matplotlib.pyplot as plt
 
 def stack_plot_perf(df1, df2):

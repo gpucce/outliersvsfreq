@@ -1,26 +1,14 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.13.6
-# ---
 
-# %%
-from inspect import ArgInfo
 from datasets import load_dataset, load_metric, ClassLabel
-import random
+
 import torch
-import pandas as pd
 import numpy as np
 import json
 import re
-from copy import deepcopy
+
 from pathlib import Path
+from argparse import _ArgumentGroup, ArgumentParser
+from itertools import combinations
 from transformers import (
     Wav2Vec2CTCTokenizer,
     Wav2Vec2FeatureExtractor,
@@ -30,35 +18,22 @@ from transformers import (
     Trainer,
 )
 
-# %%
-from itertools import combinations
 
-# %%
-from argparse import _ArgumentGroup, ArgumentParser
-
-# %%
-import sys
-
-# %%
 from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
 from outliersvsfreq.parameter_hiding import zero_wav2_vec_param_
 
-# %%
 parser = ArgumentParser()
-
-# %%
 parser.add_argument("--step", type=str, choices=["train", "test"])
 
-# %%
+
 args = parser.parse_args()
 do_train = args.step == "train"
 output_dir = Path("output")
 output_dir.mkdir(exist_ok=True, parents=True)
 
-# %%
+
 timit = load_dataset("timit_asr")
 
-# %%
 timit = timit.remove_columns(
     [
         "phonetic_detail",
@@ -70,28 +45,19 @@ timit = timit.remove_columns(
     ]
 )
 
-# %%
 chars_to_ignore_regex = '[\,\?\.\!\-\;\:"]'
 
-
-# %%
 def remove_special_characters(batch):
     batch["text"] = re.sub(chars_to_ignore_regex, "", batch["text"]).lower()
     return batch
 
-
-# %%
 timit = timit.map(remove_special_characters)
 
-
-# %%
 def extract_all_chars(batch):
     all_text = " ".join(batch["text"])
     vocab = list(set(all_text))
     return {"vocab": [vocab], "all_text": [all_text]}
 
-
-# %%
 vocabs = timit.map(
     extract_all_chars,
     batched=True,
@@ -99,28 +65,21 @@ vocabs = timit.map(
     keep_in_memory=True,
     remove_columns=timit.column_names["train"],
 )
-
-# %%
 vocab_list = list(set(vocabs["train"]["vocab"][0]) | set(vocabs["test"]["vocab"][0]))
-
-# %%
 vocab_dict = {v: k for k, v in enumerate(vocab_list)}
 
-# %%
 ## CHANGES TO VOCAB
 vocab_dict["|"] = vocab_dict[" "]
 vocab_dict["[UNK]"] = len(vocab_dict)
 vocab_dict["[PAD]"] = len(vocab_dict)
 del vocab_dict[" "]
 
-# %%
 with open("vocab.json", "w") as vocab_file:
     try:
         vocab_dict = json.load(vocab_file)
     except:
         json.dump(vocab_dict, vocab_file)
 
-# %%
 try:
     tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./output/processors/")
 except:
@@ -128,7 +87,6 @@ except:
         "./vocab.json", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|"
     )
 
-# %%
 feature_extractor = Wav2Vec2FeatureExtractor(
     feature_size=1,
     sampling_rate=16000,
@@ -137,7 +95,6 @@ feature_extractor = Wav2Vec2FeatureExtractor(
     return_attention_mask=False,
 )
 
-# %%
 try:
     processor = Wav2Vec2Processor.from_pretrained("./output/processors/")
 except:
@@ -145,11 +102,6 @@ except:
         feature_extractor=feature_extractor, tokenizer=tokenizer
     )
 
-# %% [markdown]
-# processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large")
-
-
-# %%
 def prepare_dataset(batch):
     audio = batch["audio"]
 
@@ -162,14 +114,10 @@ def prepare_dataset(batch):
         batch["labels"] = processor(batch["text"]).input_ids
     return batch
 
-
-# %%
 timit = timit.map(
     prepare_dataset, remove_columns=timit.column_names["train"], num_proc=4
 )
 
-
-# %%
 class DataCollatorCTCWithPadding:
     def __init__(
         self,
@@ -220,15 +168,10 @@ class DataCollatorCTCWithPadding:
 
         return batch
 
-
-# %%
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 
-# %%
 wer_metric = load_metric("wer")
 
-
-# %%
 def compute_metrics(pred):
     pred_logits = pred.predictions
     pred_ids = np.argmax(pred_logits, axis=-1)
@@ -243,19 +186,14 @@ def compute_metrics(pred):
 
     return {"wer": wer}
 
-
-# %%
 model = Wav2Vec2ForCTC.from_pretrained(
     "facebook/wav2vec2-base",
     ctc_loss_reduction="mean",
     pad_token_id=processor.tokenizer.pad_token_id,
 )
 
-# %%
 model.freeze_feature_extractor()
 
-
-# %%
 training_args = TrainingArguments(
     output_dir="output/training_output",
     group_by_length=True,
@@ -276,7 +214,6 @@ training_args = TrainingArguments(
     overwrite_output_dir=True,
 )
 
-# %%
 trainer = Trainer(
     model=model,
     data_collator=data_collator,
@@ -287,7 +224,6 @@ trainer = Trainer(
     tokenizer=processor.feature_extractor,
 )
 
-# %%
 if do_train:
     trainer.train()
     trainer.save_model()
@@ -295,8 +231,6 @@ if do_train:
     tokenizer.save_pretrained("./output/processors/")
     processor.save_pretrained("./output/processors/")
 
-
-# %%
 def map_to_result(newmodel, batch):
     with torch.no_grad():
         input_values = torch.tensor(batch["input_values"], device="cuda").unsqueeze(0)
@@ -308,15 +242,11 @@ def map_to_result(newmodel, batch):
 
     return batch
 
-
-# %%
 model.to("cpu")
 outliers_idxs = choose_outlier_for_finetuning(model, model_type="wav2vec", n_std=3.0)
 
-# %%
 output = dict()
 
-# %%
 for idxs in (
     [[]] + list(combinations(outliers_idxs, 1)) + list(combinations(outliers_idxs, 2))
 ):
@@ -349,6 +279,5 @@ for idxs in (
 
     output[str(idxs)] = results
 
-# %%
 with open("output/results.json", "w") as results_output_file:
     json.dump(output, results_output_file)

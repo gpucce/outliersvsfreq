@@ -2,15 +2,13 @@ from transformers import Trainer, DataCollatorForLanguageModeling, set_seed
 from torch.utils.data import DataLoader
 import torch
 
-import numpy as np
 import pandas as pd
 
-import random
 from pathlib import Path
 from copy import deepcopy
 from tqdm.auto import tqdm
 
-from ..parameter_hiding import zero_param_
+from outliersvsfreq.parameter_hiding import zero_param_
 
 __all__ = ["MLMAnalysisTrainer"]
 

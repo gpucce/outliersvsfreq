@@ -1,15 +1,12 @@
 
-import os, json
-from copy import deepcopy
-
-
-from outliersvsfreq.parameter_hiding import zero_vit_param_
-from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
 import random
-
+import os
+import json
+from copy import deepcopy
 from itertools import accumulate, combinations
 
 from datasets import load_metric
+from transformers.optimization import get_cosine_schedule_with_warmup
 from transformers import (
     ViTForImageClassification,
     ViTFeatureExtractor,
@@ -17,12 +14,11 @@ from transformers import (
     TrainingArguments,
 )
 
-from transformers.optimization import get_cosine_schedule_with_warmup
+from outliersvsfreq.parameter_hiding import zero_vit_param_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
 
 import numpy as np
 import torch
-from torch.nn import Module, Linear, CrossEntropyLoss
-from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.optim import SGD
 import torchvision
 from torchvision.transforms import (
@@ -34,9 +30,6 @@ from torchvision.transforms import (
     Resize,
     ToTensor,
 )
-
-import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
 
 from argparse import ArgumentParser
 from datetime import datetime

@@ -1,6 +1,5 @@
 from .parameter_access import get_layers
 import torch
-import numpy as np
 
 __all__ = [
     "zero_param_",

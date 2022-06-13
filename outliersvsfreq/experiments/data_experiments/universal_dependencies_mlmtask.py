@@ -1,32 +1,13 @@
-from functools import reduce
-from logging import error
-from datasets.arrow_dataset import Dataset
-from transformers import AutoModelForMaskedLM, AutoTokenizer, TrainingArguments
 
-from datasets import load_dataset
-from torch.utils.data import DataLoader
 import torch
-import numpy as np
 import spacy
 
+from datasets import load_dataset
 from pathlib import Path
-
-from argparse import ArgumentParser
-
-from transformers.data import data_collator
-
-nlp = spacy.load("en_core_web_sm")
-
-from functools import reduce
-from scipy.spatial.distance import cdist, cosine
-import pandas as pd
-
-
-from outliersvsfreq.parameter_hiding import zero_param_
+from transformers import AutoModelForMaskedLM, AutoTokenizer, TrainingArguments
 from outliersvsfreq.mlm_analysis import MLMAnalysisTrainer
 
-from tqdm.auto import tqdm
-
+nlp = spacy.load("en_core_web_sm")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

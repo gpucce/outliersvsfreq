@@ -1,5 +1,10 @@
-from datasets import load_dataset, load_metric
+
 import torch
+import random
+from pathlib import Path
+from argparse import ArgumentParser
+
+from datasets import load_dataset
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -7,15 +12,9 @@ from transformers import (
     logging,
 )
 
-logging.set_verbosity_error()
-
 from outliersvsfreq.outlier_correlation import OutlierAnalysisTrainer
 
-import random
-from pathlib import Path
-
-from scipy.stats import pearsonr
-from argparse import ArgumentParser
+logging.set_verbosity_error()
 
 parser = ArgumentParser()
 parser.add_argument(

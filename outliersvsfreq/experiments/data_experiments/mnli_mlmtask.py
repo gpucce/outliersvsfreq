@@ -1,30 +1,22 @@
+
+
+import json
+
+import numpy as np
+import pandas as pd
+
+from pathlib import Path
+from argparse import ArgumentParser
+from tqdm.auto import tqdm
+from datasets import load_dataset
 from transformers import (
     AutoModelForMaskedLM,
     AutoTokenizer,
     TrainingArguments,
-    Trainer,
     set_seed,
 )
 
-from datasets import load_dataset
-
-import torch
-from torch.utils.data import DataLoader
-from functools import reduce
-
-import matplotlib.pyplot as plt
-import random
-import sys
-
-from outliersvsfreq.parameter_hiding import zero_param_
 from outliersvsfreq.mlm_analysis import MLMAnalysisTrainer
-from copy import deepcopy
-from tqdm.auto import tqdm
-import pandas as pd
-import numpy as np
-import json
-from pathlib import Path
-from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument(

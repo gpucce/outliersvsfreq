@@ -1,4 +1,12 @@
-from unittest import result
+
+
+import torch
+import json
+
+from datasets import load_dataset
+from pathlib import Path
+from argparse import ArgumentParser
+
 from transformers import (
     AutoModelForMaskedLM,
     AutoTokenizer,
@@ -7,26 +15,11 @@ from transformers import (
     DataCollatorForLanguageModeling,
     Trainer,
 )
-import random
-from itertools import combinations
-
-logging.set_verbosity_error()
-from datasets import load_dataset
-import torch
-from pathlib import Path
-import sys
 
 from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
-from outliersvsfreq.gradient_analysis import *
-from outliersvsfreq.parameter_hiding import zero_last_param_, zero_param_
+from outliersvsfreq.parameter_hiding import zero_last_param_
 
-
-from tqdm.auto import tqdm
-
-import json
-import datetime
-
-from argparse import ArgumentParser
+logging.set_verbosity_error()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
