@@ -3,8 +3,8 @@ import os, json
 from copy import deepcopy
 
 
-from outlier_analysis.parameter_hiding import zero_vit_param_
-from outlier_analysis.parameter_access import choose_outlier_for_finetuning
+from outliersvsfreq.parameter_hiding import zero_vit_param_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
 import random
 
 from itertools import accumulate, combinations

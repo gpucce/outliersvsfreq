@@ -16,9 +16,9 @@ import torch
 from pathlib import Path
 import sys
 
-from outlier_analysis.parameter_access import choose_outlier_for_finetuning
-from outlier_analysis.gradient_analysis import *
-from outlier_analysis.parameter_hiding import zero_last_param_, zero_param_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
+from outliersvsfreq.gradient_analysis import *
+from outliersvsfreq.parameter_hiding import zero_last_param_, zero_param_
 
 
 from tqdm.auto import tqdm

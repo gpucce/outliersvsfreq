@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import random
 import sys
 
-from outlier_analysis.parameter_hiding import zero_param_
-from outlier_analysis.mlm_analysis import MLMAnalysisTrainer
+from outliersvsfreq.parameter_hiding import zero_param_
+from outliersvsfreq.mlm_analysis import MLMAnalysisTrainer
 from copy import deepcopy
 from tqdm.auto import tqdm
 import pandas as pd

@@ -2,8 +2,8 @@
 import pandas as pd
 import regex as re
 
-from outlier_analysis.gather_scores import free_gather_scores_with_layers
-from outlier_analysis.plotting import stack_plot_perf, embellish_scores_plot
+from outliersvsfreq.gather_scores import free_gather_scores_with_layers
+from outliersvsfreq.plotting import stack_plot_perf, embellish_scores_plot
 
 from argparse import ArgumentParser
 

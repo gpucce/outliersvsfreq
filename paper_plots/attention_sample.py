@@ -4,8 +4,8 @@ from pathlib import Path
 from torch.optim import SGD
 import sys
 
-from outlier_analysis.parameter_access import *
-from outlier_analysis.parameter_hiding import zero_param_
+from outliersvsfreq.parameter_access import *
+from outliersvsfreq.parameter_hiding import zero_param_
 import matplotlib.pyplot as plt
 import seaborn as sns
 from argparse import ArgumentParser

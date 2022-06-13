@@ -22,8 +22,8 @@ from scipy.spatial.distance import cdist, cosine
 import pandas as pd
 
 
-from outlier_analysis.parameter_hiding import zero_param_
-from outlier_analysis.mlm_analysis import MLMAnalysisTrainer
+from outliersvsfreq.parameter_hiding import zero_param_
+from outliersvsfreq.mlm_analysis import MLMAnalysisTrainer
 
 from tqdm.auto import tqdm
 

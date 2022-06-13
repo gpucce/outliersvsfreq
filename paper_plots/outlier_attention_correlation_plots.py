@@ -8,10 +8,10 @@ from transformers import (
 
 logging.set_verbosity_error()
 
-from outlier_analysis.parameter_hiding import zero_param_, zero_inner_attention_
-from outlier_analysis.parameter_access import choose_outlier_for_finetuning
-from outlier_analysis.outlier_correlation import OutlierAnalysisTrainer
-from outlier_analysis.plotting import (
+from outliersvsfreq.parameter_hiding import zero_param_, zero_inner_attention_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
+from outliersvsfreq.outlier_correlation import OutlierAnalysisTrainer
+from outliersvsfreq.plotting import (
     stack_plot_corr,
     stack_plot_freq,
     embellish_corr_to_att,

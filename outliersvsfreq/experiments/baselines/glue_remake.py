@@ -12,8 +12,8 @@ import os.path as osp
 from pathlib import Path
 import sys
 
-from outlier_analysis.parameter_access import choose_outlier_for_finetuning
-from outlier_analysis.parameter_hiding import zero_param_, zero_last_param_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
+from outliersvsfreq.parameter_hiding import zero_param_, zero_last_param_
 from argparse import ArgumentParser
 from itertools import combinations
 

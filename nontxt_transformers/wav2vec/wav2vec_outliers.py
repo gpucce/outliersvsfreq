@@ -40,8 +40,8 @@ from argparse import _ArgumentGroup, ArgumentParser
 import sys
 
 # %%
-from outlier_analysis.parameter_access import choose_outlier_for_finetuning
-from outlier_analysis.parameter_hiding import zero_wav2_vec_param_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
+from outliersvsfreq.parameter_hiding import zero_wav2_vec_param_
 
 # %%
 parser = ArgumentParser()

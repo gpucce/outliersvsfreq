@@ -9,7 +9,7 @@ from transformers import (
 
 logging.set_verbosity_error()
 
-from outlier_analysis.outlier_correlation import OutlierAnalysisTrainer
+from outliersvsfreq.outlier_correlation import OutlierAnalysisTrainer
 
 import random
 from pathlib import Path
