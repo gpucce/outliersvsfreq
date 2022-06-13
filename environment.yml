@@ -1,0 +1,23 @@
+name: outliersvsfreq_test_env
+channels:
+  - pytorch
+  - huggingface
+  - conda-forge
+  - defaults
+dependencies:
+  - transformers
+  - datasets
+  - tokenizers
+  - matplotlib
+  - python=3.8
+  - pip=21.2.4
+  - cudatoolkit=11.3
+  - pytorch
+  - torchvision
+  - torchaudio
+  - torchmetrics
+  - seaborn
+  - scipy
+  - spacy
+  - pip:
+    - blingfire
