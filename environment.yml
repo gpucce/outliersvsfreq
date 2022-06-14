@@ -5,10 +5,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - transformers
-  - datasets
-  - tokenizers
-  - matplotlib
   - python=3.8
   - pip=21.2.4
   - cudatoolkit=11.3
@@ -19,5 +15,11 @@ dependencies:
   - seaborn
   - scipy
   - spacy
+  - scikit-learn
+  - matplotlib
   - pip:
+    - transformers==4.16
+    - datasets
+    - tokenizers
     - blingfire
+    - tensorflow
