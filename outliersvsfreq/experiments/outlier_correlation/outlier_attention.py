@@ -1,17 +1,15 @@
+# pylint: disable=attribute-defined-outside-init
+import json
+import torch
+import numpy as np
 from transformers import Trainer
 from tqdm.auto import tqdm
-import numpy as np
-import torch
-import json
 
 
 __all__ = ["OutlierAnalysisTrainer"]
 
 
 class OutlierAnalysisTrainer(Trainer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def correlate_outliers_and_attentions(self, outlier_idxs, avoid_special_toks=False):
         eval_loader = self.get_eval_dataloader()
         hidden_states = {outlier_idx: [] for outlier_idx in outlier_idxs}
@@ -33,9 +31,7 @@ class OutlierAnalysisTrainer(Trainer):
                 hidden_states[outlier_idx] = (
                     [
                         torch.cat([hidden_state, new_hidden_states[hidden_idx]], axis=0)
-                        for hidden_idx, hidden_state in enumerate(
-                            hidden_states[outlier_idx]
-                        )
+                        for hidden_idx, hidden_state in enumerate(hidden_states[outlier_idx])
                     ]
                     if idx > 0
                     else new_hidden_states
@@ -71,7 +67,7 @@ class OutlierAnalysisTrainer(Trainer):
     def _init_freq_file(self, freq_files):
         if isinstance(freq_files, str):
             freq_files = [freq_files]
-        self.freqs = dict()
+        self.freqs = {} 
         for freq_file in freq_files:
             with open(freq_file, "r") as freq_file_path:
                 new_freqs = json.load(freq_file_path)
@@ -80,9 +76,7 @@ class OutlierAnalysisTrainer(Trainer):
                         self.freqs[key] += val
                     else:
                         self.freqs[key] = val
-        self.idx_freqs = {
-            self.tokenizer(i).input_ids[1]: j for i, j in self.freqs.items()
-        }
+        self.idx_freqs = {self.tokenizer(i).input_ids[1]: j for i, j in self.freqs.items()}
 
     def _get_freq(self, x):
         if x in self.idx_freqs:

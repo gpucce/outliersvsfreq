@@ -1,4 +1,3 @@
-
 import random
 from pathlib import Path
 from argparse import ArgumentParser
@@ -13,7 +12,7 @@ from transformers import (
     logging,
 )
 
-from outliersvsfreq.outlier_correlation import OutlierAnalysisTrainer
+from .outlier_attention import OutlierAnalysisTrainer
 
 logging.set_verbosity_error()
 

@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 import logging
 import math
 import sys
@@ -14,10 +15,6 @@ import datasets
 from datasets import load_dataset, load_metric, concatenate_datasets
 from spacy.lang.en import English
 
-nlp = English()
-nlp.add_pipe("sentencizer")
-
-
 from transformers import (
     MODEL_FOR_MASKED_LM_MAPPING,
     AutoConfig,
@@ -30,6 +27,9 @@ from transformers import (
     set_seed,
 )
 
+nlp = English()
+nlp.add_pipe("sentencizer")
+
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -38,7 +38,7 @@ MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 @dataclass
 class ModelArguments:
     """
-    Arguments pertaining to which model/config/tokenizer we are 
+    Arguments pertaining to which model/config/tokenizer we are
     going to fine-tune, or train from scratch.
     """
 
@@ -307,7 +307,7 @@ def main():
 
     with training_args.main_process_first(desc="dataset map tokenization"):
         tokenized_datasets = splat_raw_datasets.map(
-            lambda x: tokenize_function(x),
+            tokenize_function,
             batched=True,
             num_proc=data_args.preprocessing_num_workers,
             remove_columns=column_names,
