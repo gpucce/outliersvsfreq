@@ -1,4 +1,3 @@
-
 import logging
 import math
 import sys
@@ -10,16 +9,16 @@ from typing import Optional
 from pathlib import Path
 import matplotlib.pyplot as plt
 
+import transformers
 import datasets
-from datasets import load_dataset, load_metric, concatenate_datasets, DatasetDict
-from spacy.lang.en import English 
+from datasets import load_dataset, load_metric, concatenate_datasets
+from spacy.lang.en import English
 
 nlp = English()
-nlp.add_pipe('sentencizer')
+nlp.add_pipe("sentencizer")
 
-import transformers
+
 from transformers import (
-    CONFIG_MAPPING,
     MODEL_FOR_MASKED_LM_MAPPING,
     AutoConfig,
     AutoModelForMaskedLM,
@@ -30,16 +29,6 @@ from transformers import (
     TrainingArguments,
     set_seed,
 )
-from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import check_min_version
-from transformers.utils.versions import require_version
-from torch import long, multinomial, tensor
-import torch
-
-# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.17.0.dev0")
-
-require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
@@ -49,33 +38,40 @@ MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 @dataclass
 class ModelArguments:
     """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
+    Arguments pertaining to which model/config/tokenizer we are 
+    going to fine-tune, or train from scratch.
     """
-    
+
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained"
+            " models downloaded from huggingface.co"
+        },
     )
     use_fast_tokenizer: bool = field(
         default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer "
+            "(backed by the tokenizers library) or not."
+        },
     )
     model_revision: str = field(
         default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+        metadata={
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+        },
     )
     use_auth_token: bool = field(
         default=False,
         metadata={
-            "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
+            "help": "Will use the token generated when running "
+            "`transformers-cli login` (necessary to use this script "
             "with private models)."
         },
     )
     path_to_freqs: bool = field(
-        default=None,
-        metadata={
-            "help": "Path to a token frequency json file."
-        }
+        default=None, metadata={"help": "Path to a token frequency json file."}
     )
 
 
@@ -86,15 +82,23 @@ class DataTrainingArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
-    train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    train_file: Optional[str] = field(
+        default=None, metadata={"help": "The input training data file (a text file)."}
+    )
     validation_file: Optional[str] = field(
         default=None,
-        metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
+        metadata={
+            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
+        },
     )
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
@@ -121,7 +125,9 @@ class DataTrainingArguments:
     )
     line_by_line: bool = field(
         default=False,
-        metadata={"help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."},
+        metadata={
+            "help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."
+        },
     )
     pad_to_max_length: bool = field(
         default=False,
@@ -145,35 +151,25 @@ class DataTrainingArguments:
         },
     )
     randomize_tokens: bool = field(
-        default=False,
-        metadata={
-            "help": "Tries to remove token distribution from the input."
-        }
+        default=False, metadata={"help": "Tries to remove token distribution from the input."}
     )
     is_test: bool = field(
-        default=False,
-        metadata={
-            "help": "Runs a test run instead of a full one."
-        }
+        default=False, metadata={"help": "Runs a test run instead of a full one."}
     )
-    do_split_in_sentences:bool = field(
-        default=True,
-        metadata = {
-            "help": "Use or not spacy sentencizer to split in sentences."
-        }
+    do_split_in_sentences: bool = field(
+        default=True, metadata={"help": "Use or not spacy sentencizer to split in sentences."}
     )
-    few_special_tokens:bool = field(
-        default=False,
-        metadata={
-            "help": "If true only add [SEP] at the end of sequence."
-        }
+    few_special_tokens: bool = field(
+        default=False, metadata={"help": "If true only add [SEP] at the end of sequence."}
     )
 
 
 def preprocess_logits_for_metrics(logits, labels):
     return logits.argmax(dim=-1)
 
+
 metric = load_metric("accuracy")
+
 
 def compute_metrics(eval_preds):
     preds, labels = eval_preds
@@ -184,9 +180,11 @@ def compute_metrics(eval_preds):
     preds = preds[mask]
     return metric.compute(predictions=preds, references=labels)
 
+
 def split_in_sentences(text_list):
     docs = [nlp(text) for text in text_list]
     return [str(sent).strip() for doc in docs for sent in doc.sents if len(str(sent)) > 10]
+
 
 def main():
 
@@ -198,15 +196,15 @@ def main():
     max_seq_length = data_args.max_seq_length
     few_special_tokens = data_args.few_special_tokens
     if randomize_tokens:
-        training_args.output_dir += f"_randomized_tokens"
+        training_args.output_dir += "_randomized_tokens"
     if few_special_tokens:
-        training_args.output_dir += f"_fewspecialtoks"
+        training_args.output_dir += "_fewspecialtoks"
     today = datetime.datetime.now()
     date_time = today.strftime("%m.%d.%Y_%H:%M:%S")
     training_args.date_time = date_time
     training_args.output_dir += f"_{training_args.date_time}"
     if is_test:
-        training_args.output_dir = f"test_runs/" + training_args.output_dir
+        training_args.output_dir = "test_runs/" + training_args.output_dir
     output_dir_path = Path(training_args.output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
     with open(output_dir_path / "data_args.json", "w") as data_args_out_file:
@@ -241,22 +239,20 @@ def main():
     # download the dataset.
     # CUSTOM DATASET SETTING
     joint_datasets = [
-        load_dataset(
-            "wikipedia", 
-            "20220301.en", 
-            cache_dir=model_args.cache_dir
-        )["train"].remove_columns(["id", "url", "title"]),
-        load_dataset("bookcorpus", cache_dir=model_args.cache_dir)["train"]
+        load_dataset("wikipedia", "20220301.en", cache_dir=model_args.cache_dir)[
+            "train"
+        ].remove_columns(["id", "url", "title"]),
+        load_dataset("bookcorpus", cache_dir=model_args.cache_dir)["train"],
     ]
 
-    if is_test: 
+    if is_test:
         joint_datasets[0] = joint_datasets[0].select(range(10000))
         joint_datasets[1] = joint_datasets[1].select(range(100000))
 
     raw_datasets = concatenate_datasets(joint_datasets).train_test_split(test_size=0.1)
     raw_datasets["validation"] = raw_datasets["test"]
     del raw_datasets["test"]
-    
+
     for i in raw_datasets:
         raw_datasets[i] = raw_datasets[i].shuffle(42)
 
@@ -264,8 +260,8 @@ def main():
     if do_split_in_sentences:
         with training_args.main_process_first(desc="split sentences"):
             splat_raw_datasets = raw_datasets.map(
-                lambda batch: {"text":split_in_sentences(batch["text"])}, 
-                remove_columns=[i for i in raw_datasets["train"].column_names if i != "text"], 
+                lambda batch: {"text": split_in_sentences(batch["text"])},
+                remove_columns=[i for i in raw_datasets["train"].column_names if i != "text"],
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 desc="Splitting on sentences.",
@@ -298,11 +294,15 @@ def main():
     column_names = splat_raw_datasets["train"].column_names
     text_column_name = "text" if "text" in column_names else column_names[0]
 
-
     # We use `return_special_tokens_mask=True` because DataCollatorForLanguageModeling (see below) is more
-    # efficient when it receives the `special_tokens_mask`.    
+    # efficient when it receives the `special_tokens_mask`.
     def tokenize_function(examples):
-        tokenized = {k:i for k,i in tokenizer(examples[text_column_name], return_special_tokens_mask=True).items()}
+        tokenized = {
+            k: i
+            for k, i in tokenizer(
+                examples[text_column_name], return_special_tokens_mask=True
+            ).items()
+        }
         return tokenized
 
     with training_args.main_process_first(desc="dataset map tokenization"):
@@ -315,7 +315,6 @@ def main():
             desc="Running tokenizer on every text in dataset",
         )
 
-
     def _join_separate_sentences(concatenated_examples, pad):
         total_length = len(concatenated_examples[list(concatenated_examples.keys())[0]])
         # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
@@ -325,34 +324,43 @@ def main():
             total_length = (total_length // local_max_seq_length) * local_max_seq_length
         # Split by chunks of max_len.
         return {
-            k: [t[i : i + local_max_seq_length] for i in range(0, total_length, local_max_seq_length)]
+            k: [
+                t[i : i + local_max_seq_length]
+                for i in range(0, total_length, local_max_seq_length)
+            ]
             for k, t in concatenated_examples.items()
         }
-        
+
     def group_texts_plus_cls(examples):
         # Concatenate all texts. After removing first token ([CLS]/<s>).
-        concatenated_examples = {k: list(chain(*[i[1:] for i in examples[k]])) for k in examples.keys()}
+        concatenated_examples = {
+            k: list(chain(*[i[1:] for i in examples[k]])) for k in examples.keys()
+        }
         result = _join_separate_sentences(concatenated_examples, 1)
         # Add back [CLS]/<s> only at the beginning of the first sentence (e.g. only at the beginnning
         # of the whole sequence)
         return {
-            "input_ids":[[tokenizer.cls_token_id] + i for i in result["input_ids"]],
-            "attention_mask":[[1] + i for i in result["attention_mask"]],
-            "token_type_ids":[[0] + i for i in result["token_type_ids"]],
-            "special_tokens_mask":[[1] + i for i in result["special_tokens_mask"]]
+            "input_ids": [[tokenizer.cls_token_id] + i for i in result["input_ids"]],
+            "attention_mask": [[1] + i for i in result["attention_mask"]],
+            "token_type_ids": [[0] + i for i in result["token_type_ids"]],
+            "special_tokens_mask": [[1] + i for i in result["special_tokens_mask"]],
         }
 
     def group_texts_plus_cls_and_sep(examples):
         # Concatenate all texts. After removing first token ([CLS]/<s>).
-        concatenated_examples = {k: list(chain(*[i[1:-1] for i in examples[k]])) for k in examples.keys()}
+        concatenated_examples = {
+            k: list(chain(*[i[1:-1] for i in examples[k]])) for k in examples.keys()
+        }
         result = _join_separate_sentences(concatenated_examples, 2)
         # Add back [CLS]/<s> only at the beginning of the first sentence (e.g. only at the beginnning
         # of the whole sequence) and [SEP]/</s> only at the end of the whole sequence.
         return {
-            "input_ids":[[tokenizer.cls_token_id] + i + [tokenizer.sep_token_id] for i in result["input_ids"]],
-            "attention_mask":[[1] + i + [1] for i in result["attention_mask"]],
-            "token_type_ids":[[0] + i + [0] for i in result["token_type_ids"]],
-            "special_tokens_mask":[[1] + i + [1] for i in result["special_tokens_mask"]]
+            "input_ids": [
+                [tokenizer.cls_token_id] + i + [tokenizer.sep_token_id] for i in result["input_ids"]
+            ],
+            "attention_mask": [[1] + i + [1] for i in result["attention_mask"]],
+            "token_type_ids": [[0] + i + [0] for i in result["token_type_ids"]],
+            "special_tokens_mask": [[1] + i + [1] for i in result["special_tokens_mask"]],
         }
 
     # To speed up this part, we use multiprocessing. See the documentation of the map method for more information:
@@ -384,7 +392,9 @@ def main():
         ax.hist(all_toks)
         fig.savefig(output_dir_path / "token_dist.png", bbox_inches="tight")
 
-        with open(output_dir_path / f"py_log_split_in_sentences_{do_split_in_sentences}.txt", "w") as log_file:
+        with open(
+            output_dir_path / f"py_log_split_in_sentences_{do_split_in_sentences}.txt", "w"
+        ) as log_file:
             log_file.write(f"do split in sentences: {do_split_in_sentences}\n")
             log_file.write(f"few special tokens: {few_special_tokens}\n")
             log_file.write(f"n_samples: {n_samples}\n")
@@ -413,7 +423,7 @@ def main():
     )
 
     trainer.save_model(Path(trainer.args.output_dir) / "checkpoint-0")
-    
+
     train_result = trainer.train()
     trainer.save_model()  # Saves the tokenizer too for easy upload
     metrics = train_result.metrics

@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 from argparse import ArgumentParser
@@ -46,6 +45,8 @@ def main():
     generation_out_dir.mkdir(parents=True, exist_ok=True)
 
     ds = load_dataset("glue", "mnli")
+    for i in ds:
+        ds[i] = ds[i].select(range(1000))
     encoded_ds = ds.map(
         lambda row: tokenizer(
             row["premise"], padding="max_length", truncation=True, max_length=max_length

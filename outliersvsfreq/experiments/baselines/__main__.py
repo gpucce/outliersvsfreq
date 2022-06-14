@@ -11,6 +11,7 @@ from transformers import (
     AutoModelForSequenceClassification,
     TrainingArguments,
     Trainer,
+    set_seed,
 )
 
 
@@ -68,6 +69,7 @@ def main():
     do_train = args.step == "train"
     max_length = args.max_length
     random_seed = args.random_seed
+    set_seed(random_seed)
     check_all_idxs = args.check_all_idxs
     lr = args.lr
     task = args.task
