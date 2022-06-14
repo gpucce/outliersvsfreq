@@ -1,18 +1,22 @@
-
-
 import json
-import torch
-import numpy as np
-import regex as re
-
 from pathlib import Path
-from datasets import load_dataset, load_metric
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 from argparse import ArgumentParser
 from itertools import combinations
 
+import numpy as np
+
+from datasets import load_dataset, load_metric
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    TrainingArguments,
+    Trainer,
+)
+
+
 from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
-from outliersvsfreq.parameter_hiding import zero_param_, zero_last_param_
+from outliersvsfreq.parameter_hiding import zero_last_param_
+
 
 def main():
 
@@ -48,12 +52,10 @@ def main():
     )
 
     parser.add_argument("--train_batch_size", type=int, help="set batch size", default=256)
-    parser.add_argument(
-        "--random_seed", type=int, help="set dataset random seed", default=43
-    )
+    parser.add_argument("--random_seed", type=int, help="set dataset random seed", default=43)
     parser.add_argument("--eval_batch_size", type=int, help="set batch size", default=256)
     parser.add_argument(
-        "--model_checkpoint", type=str, help="Choose a specific model checkpoint to use"
+        "--model_name_or_path", type=str, help="Choose a specific model checkpoint to use"
     )
 
     parser.add_argument("--max_length", type=int, default=256, help="Choose the max length")
@@ -70,16 +72,8 @@ def main():
     lr = args.lr
     task = args.task
     layer_range_length = args.layer_range_length
-    model_checkpoint = args.model_checkpoint
-    if model_checkpoint == "drozd":
-        model_checkpoint = "../pretrained_models/pretrained_models_drozd/sl250.m.gsic.titech.ac.jp:8000/21.11.17_06.30.32_roberta-base_a0057/checkpoints/smpl_400M/hf/"
-        model_name = "drozd_model"
-    elif "../pretrained_models/" in model_checkpoint:
-        model_name = re.sub("_$", "", "_".join(model_checkpoint.split("/")[2:])).replace(
-            "-", "_"
-        )
-    else:
-        model_name = model_checkpoint
+    model_name_or_path = args.model_name_or_path
+
     train_batch_size = args.train_batch_size
     eval_batch_size = args.eval_batch_size
 
@@ -87,7 +81,7 @@ def main():
     dataset = load_dataset("glue", actual_task)
     metric = load_metric("glue", actual_task)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
 
     task_to_keys = {
         "cola": ("sentence", None),
@@ -103,26 +97,30 @@ def main():
     }
 
     ##### tokenization_parameters
-    
-
-    model_and_score_file_info = actual_task
-    model_and_score_file_info += f"_max_length_{max_length}"
-    model_and_score_file_info += f"_lr_{lr}"
-    model_and_score_file_info += f"_batch_size_{train_batch_size}"
-    model_and_score_file_info += f"_random_seed_{random_seed}"
-    model_last_dir = f"{model_name}_" + model_and_score_file_info
-
-
     output_path = Path("output/baselines")
-    modeldir = output_path / "models" / model_last_dir
-    scoresdir = output_path / "scores" / model_name
+    if not Path(model_name_or_path).exists():
+
+        model_and_score_file_info = actual_task
+        model_and_score_file_info += f"_max_length_{max_length}"
+        model_and_score_file_info += f"_lr_{lr}"
+        model_and_score_file_info += f"_batch_size_{train_batch_size}"
+        model_and_score_file_info += f"_random_seed_{random_seed}"
+        model_last_dir = f"{model_name_or_path}_" + model_and_score_file_info
+        modeldir = output_path / "models" / model_last_dir
+        scoresdir = output_path / "scores" / model_last_dir
+    else:
+        modeldir = model_name_or_path
+        scoresdir = Path(str(model_name_or_path).replace("/models/", "/scores/"))
 
     sentence1_key, sentence2_key = task_to_keys[task]
 
     def preprocess_function(examples, max_length):
         if sentence2_key is None:
             return tokenizer(
-                examples[sentence1_key], truncation=True, padding="max_length", max_length=max_length
+                examples[sentence1_key],
+                truncation=True,
+                padding="max_length",
+                max_length=max_length,
             )
         else:
             return tokenizer(
@@ -133,28 +131,21 @@ def main():
                 max_length=max_length,
             )
 
-
     encoded_dataset = dataset.map(
         lambda x: preprocess_function(x, max_length=max_length), batched=True
     )
-    encoded_dataset.set_format(type='torch')
+    encoded_dataset.set_format(type="torch")
     encoded_dataset = encoded_dataset.shuffle(random_seed)
 
     num_labels = 3 if task.startswith("mnli") else 1 if task == "stsb" else 2
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        model_checkpoint, num_labels=num_labels
+        model_name_or_path, num_labels=num_labels
     )
 
     metric_name = (
-        "pearson"
-        if task == "stsb"
-        else "matthews_correlation"
-        if task == "cola"
-        else "accuracy"
+        "pearson" if task == "stsb" else "matthews_correlation" if task == "cola" else "accuracy"
     )
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     args = TrainingArguments(
         modeldir,
@@ -178,7 +169,6 @@ def main():
             predictions = predictions[:, 0]
         return metric.compute(predictions=predictions, references=labels)
 
-
     validation_key = (
         "validation_mismatched"
         if task == "mnli-mm"
@@ -186,7 +176,6 @@ def main():
         if task == "mnli"
         else "validation"
     )
-
 
     if do_train:
         trainer = Trainer(
@@ -197,38 +186,48 @@ def main():
             tokenizer=tokenizer,
             compute_metrics=compute_metrics,
         )
-        old_collator = trainer.data_collator
-        trainer.data_collator = lambda data: dict(old_collator(data))
         trainer.train()
         trainer.save_model()
         trainer.save_state()
     elif not do_train:
         idxs = choose_outlier_for_finetuning(
-            model, n_std=1.5, model_type="LM", topk=10,
+            model,
+            n_std=2,
+            model_type="LM",
+            topk=10,
         )
-        
+
+        model_name_or_path_str = str(model_name_or_path)
         if check_all_idxs:
             known_idxs = range(model.config.hidden_size)
-        elif model_name == "bert-base-uncased":
+        elif model_name_or_path_str == "bert-base-uncased":
             known_idxs = [308, 381]
-        elif model_name == "roberta-base":
+        elif "roberta-base" in model_name_or_path_str:
             known_idxs = [77, 588]
-        elif "multiberts_seed_0" in model_name:
+        elif "multiberts_seed_0" in model_name_or_path_str:
             known_idxs = [263, 628]
-        elif "multiberts_seed_1" in model_name:
+        elif "multiberts_seed_1" in model_name_or_path_str:
             known_idxs = [218, 674]
         else:
             for i in known_idxs:
                 if not i in idxs:
                     idxs.append(i)
 
-        param_groups = [[]] + list(combinations(idxs, 1)) + list(combinations(idxs, 2))
+        param_groups = [[]] + list(combinations(idxs, 1))  # + list(combinations(idxs, 2))
         if len(idxs) > 1:
             param_groups += [idxs]
 
-        for layer_range_start in range(0, 13 - layer_range_length):
-            for param_group in param_groups:
+        param_groups = [[i] for i in known_idxs]
 
+        out = {}
+        for layer_range_start in range(0, 13 - layer_range_length):
+            layer_id = f"{layer_range_start}_{layer_range_start + layer_range_length}"
+            out[layer_id] = {}
+            layer_id_out = out[layer_id]
+            for param_group in param_groups:
+                param_group_string = (
+                    str(param_group).replace("[", "").replace("]", "").replace(", ", "_")
+                )
                 model = model.from_pretrained(modeldir)
                 model = zero_last_param_(
                     model,
@@ -246,18 +245,13 @@ def main():
                     compute_metrics=compute_metrics,
                 )
                 results = trainer.evaluate()
-                scores_filename = model_and_score_file_info.replace(actual_task, task)
-                layers_dir = ""
-                if layer_range_length < 12:
-                    layers_dir = f"layers_window_size_{layer_range_length}"
-                    scores_filename += f"_layers_{layer_range_start}-{layer_range_start+layer_range_length}"
-                scores_filename += f"_{list(param_group)}_scores.json"
+                layer_id_out[param_group_string] = results
 
-                scores_dir = scoresdir / layers_dir
-                scores_dir.mkdir(exist_ok=True, parents=True)
-                print(scores_filename)
-                with open(scores_dir / scores_filename, "w") as scores_save_file:
-                    json.dump(results, scores_save_file)
+        scoresdir.mkdir(exist_ok=True, parents=True)
+        scores_filename = f"layer_size_{layer_range_length}_results.json"
+        with open(scoresdir / scores_filename, "w") as scores_save_file:
+            json.dump(out, scores_save_file)
+
 
 if __name__ == "__main__":
     main()

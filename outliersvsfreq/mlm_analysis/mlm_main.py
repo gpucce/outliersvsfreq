@@ -1,11 +1,10 @@
-from transformers import Trainer, DataCollatorForLanguageModeling, set_seed
-from torch.utils.data import DataLoader
-import torch
-
-import pandas as pd
-
 from pathlib import Path
 from copy import deepcopy
+
+import torch
+import pandas as pd
+from transformers import Trainer, DataCollatorForLanguageModeling, set_seed
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from outliersvsfreq.parameter_hiding import zero_param_
@@ -56,9 +55,7 @@ class MLMAnalysisTrainer(Trainer):
                 broken_masked_output = model(
                     **{i: j.to(model.device) for i, j in masked_batch.items()}
                 ).logits
-                broken_masked_generated = (
-                    broken_masked_output[mask, :].argmax(-1).detach().cpu()
-                )
+                broken_masked_generated = broken_masked_output[mask, :].argmax(-1).detach().cpu()
                 if do_full_model:
                     masked_output = clean_model(
                         **{i: j.to(clean_model.device) for i, j in masked_batch.items()}
@@ -67,13 +64,9 @@ class MLMAnalysisTrainer(Trainer):
                     original = batch["input_ids"][mask]
 
                     real += [self.tokenizer.decode(tok) for tok in original]
-                    generated_out += [
-                        self.tokenizer.decode(tok) for tok in masked_generated
-                    ]
+                    generated_out += [self.tokenizer.decode(tok) for tok in masked_generated]
 
-                outliers_out += [
-                    self.tokenizer.decode(tok) for tok in broken_masked_generated
-                ]
+                outliers_out += [self.tokenizer.decode(tok) for tok in broken_masked_generated]
                 count += 1
             outlier_col_name = f"outlier_{idxs}_generated_tokens"
             if do_full_model:
@@ -97,7 +90,6 @@ class MLMAnalysisTrainer(Trainer):
 
         masked_loader = self.get_train_dataloader(masked=False)
         unmasked_loader = self.get_train_dataloader(masked=False)
-        all_out = dict()
         for idxs in idxs_groups:
             hidden_model = zero_param_(deepcopy(self.model), idxs)
             sentences = []

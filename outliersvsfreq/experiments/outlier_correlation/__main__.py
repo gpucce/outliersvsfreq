@@ -1,4 +1,3 @@
-
 import torch
 import random
 from pathlib import Path
@@ -19,17 +18,9 @@ logging.set_verbosity_error()
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument(
-        "--model_name_or_path", type=str,
-        default="bert-base-uncased"
-    )
-    parser.add_argument(
-        "--step", type=str,
-        default="pre-training"
-    )
-    parser.add_argument(
-        "--freq_file_path", type=str
-    )
+    parser.add_argument("--model_name_or_path", type=str, default="bert-base-uncased")
+    parser.add_argument("--step", type=str, default="pre-training")
+    parser.add_argument("--freq_file_path", type=str)
 
     args = parser.parse_args()
     model_name_or_path = args.model_name_or_path
@@ -43,13 +34,11 @@ def main():
     elif "pretrained_models_drozd" in model_name_or_path:
         outliers_idxs = [468, 477]
 
-
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, fast=True)
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_name_or_path, num_labels=3
-    )
+    model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, num_labels=3)
 
     output_path = Path("output/outlier_correlations")
+    output_path /= model_name_or_path
 
     def preprocess_function(examples, max_length):
         return tokenizer(
@@ -68,7 +57,6 @@ def main():
     batch_size = 16
     lr = 2.0e-5
 
-
     args = TrainingArguments(
         output_path,
         evaluation_strategy="epoch",
@@ -86,7 +74,6 @@ def main():
         resume_from_checkpoint=True,
     )
 
-
     validation_key = "validation"
 
     full_trainer = OutlierAnalysisTrainer(
@@ -97,12 +84,10 @@ def main():
         tokenizer=tokenizer,
     )
 
-
     if model_name_or_path == "bert-base-uncased" or "multiberts" in model_name_or_path:
         freq_file_model_name = "bert-base-uncased"
     elif model_name_or_path == "roberta-base" or "drozd" in model_name_or_path:
         freq_file_model_name = "roberta-base"
-
 
     freqs, masks_no_special = full_trainer.get_frequency(
         [
