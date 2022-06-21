@@ -3,7 +3,7 @@
 
 Create and activate a conda environment with 
 ```
-conda env creat -f environment.yaml
+conda env create -f environment.yaml
 conda activate outliersvsfreq
 ```
 
@@ -25,6 +25,9 @@ python -m outliersvsfreq.experiments.data_experiments --model_name_or_path bert-
 All the plots in the paper should be replicable using the `paper_plots.ipynb` notebook
 
 Finally to run `bert_medium` pretraining the following should run the _SPLIT_ case
+
+>**_NOTE:_** adjust the checkpointing using huggingface settings as this is too variable to be fixed for all machines.
+
 ```
 cd pre_training_bert_medium
 python -m outliersvsfreq.experiments.pretrain_bert_medium \
@@ -58,4 +61,3 @@ and for _ONE\_SEP_ to
     --few_special_tokens true
 ```
 
->**_NOTE:_** adjust the checkpointing using huggingface settings as this is too variable to be fixed for all machines.
