@@ -49,5 +49,5 @@ for filepath in tqdm(files):
 sorted_counts = sorted(
     [(i[0], i[1]) for i in counts.items()], key=lambda x: x[1], reverse=True
 )
-with open(f"output/data_experiments/word_counts/{model_name}_book_corpus_wordcount.json", "w") as book_corpus_count:
+with open(f"word_counts/{model_name}_book_corpus_word_counts.json", "w") as book_corpus_count:
     json.dump(sorted_counts, book_corpus_count)

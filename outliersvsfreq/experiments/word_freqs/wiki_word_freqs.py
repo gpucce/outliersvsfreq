@@ -43,5 +43,5 @@ sorted_counts = sorted(
     [(i, j) for i, j in counts.items()], key=lambda x: x[1], reverse=True
 )
 
-with open(f"output/data_experiments/word_counts/{model_name}_wiki_word_counts.json", "w") as output_file:
+with open(f"word_counts/{model_name}_wiki_word_counts.json", "w") as output_file:
     json.dump(sorted_counts, output_file)

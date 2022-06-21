@@ -92,8 +92,8 @@ def main():
 
     freqs, masks_no_special = full_trainer.get_frequency(
         [
-            f"output/data_experiments/word_counts/{freq_file_model_name}_wiki_word_counts.json",
-            f"output/data_experiments/word_counts/"
+            f"word_counts/{freq_file_model_name}_wiki_word_counts.json",
+            f"word_counts/"
             f"{freq_file_model_name}_book_corpus_word_counts.json",
         ],
         avoid_special_toks=True,
