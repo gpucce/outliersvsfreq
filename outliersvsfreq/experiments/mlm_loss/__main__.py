@@ -12,6 +12,7 @@ from transformers import (
     Trainer,
 )
 
+import torch
 from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
 from outliersvsfreq.parameter_hiding import zero_last_param_
 
@@ -77,13 +78,12 @@ def main():
 
     if model_name_or_path == "bert-base-uncased":
         outliers_idxs = [[], [308], [381], [308, 381]]
-    elif model_name_or_path == "roberta-base":
+    elif "roberta-base" in model_name_or_path:
         outliers_idxs = [[], [77], [588], [77, 588]]
     elif "multiberts_seed_1" in model_name_or_path:
         outliers_idxs = [[], [218], [674], [218, 674]]
     elif "bert_medium" in model_name_or_path:
         outliers_idxs = [[]] + list(choose_outlier_for_finetuning(model, model_type="LM", n_std=2))
-    print(outliers_idxs)
 
     args = TrainingArguments(
         output_dir,

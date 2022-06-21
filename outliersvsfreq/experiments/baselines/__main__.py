@@ -6,6 +6,7 @@ from itertools import combinations
 import numpy as np
 
 from datasets import load_dataset, load_metric
+from tqdm import tqdm
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -218,8 +219,6 @@ def main():
         param_groups = [[]] + list(combinations(idxs, 1))  # + list(combinations(idxs, 2))
         if len(idxs) > 1:
             param_groups += [idxs]
-
-        param_groups = [[i] for i in known_idxs]
 
         out = {}
         for layer_range_start in range(0, 13 - layer_range_length):
