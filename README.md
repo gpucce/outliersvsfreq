@@ -24,7 +24,7 @@ python -m outliersvsfreq.experiments.data_experiments --model_name_or_path bert-
 
 All the plots in the paper should be replicable using the `paper_plots.ipynb` notebook
 
-Finally to run `bert_medium` pretraining the following would run the _SPLIT_ case
+Finally to run `bert_medium` pretraining the following should run the _SPLIT_ case
 ```
 cd pre_training_bert_medium
 python -m outliersvsfreq.experiments.pretrain_bert_medium \
