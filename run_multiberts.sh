@@ -2,15 +2,11 @@
 
 model_dir="./multiberts_ckpts/seed_1"
 tasks=(mnli mnli-mm)
+
 models=()
 for i in $(ls $model_dir)
 do
 models+=" $model_dir/$i"
-done
-
-for i in ${models[@]}
-do
-echo $i
 done
 
 for task in ${tasks[@]}
