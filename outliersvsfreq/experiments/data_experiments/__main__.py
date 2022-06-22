@@ -21,7 +21,7 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument(
-        "--model_name",
+        "--model_name_name_or_path",
         choices=["bert-base-uncased", "roberta-base"],
         default="bert-base-uncased",
     )

@@ -102,18 +102,20 @@ def main():
     ##### tokenization_parameters
     output_path = Path("output/baselines")
     if not Path(model_name_or_path).exists():
-
         model_and_score_file_info = actual_task
         model_and_score_file_info += f"_max_length_{max_length}"
         model_and_score_file_info += f"_lr_{lr}"
         model_and_score_file_info += f"_batch_size_{train_batch_size}"
         model_and_score_file_info += f"_random_seed_{random_seed}"
         model_last_dir = f"{model_name_or_path}_" + model_and_score_file_info
-        modeldir = output_path / "models" / model_last_dir
-        scoresdir = output_path / "scores" / model_last_dir
+        modeldir = Path("models") / model_last_dir
+        scoresdir = Path("scores") / model_last_dir
     else:
-        modeldir = model_name_or_path
+        modeldir = Path(model_name_or_path)
         scoresdir = Path(str(model_name_or_path).replace("/models/", "/scores/"))
+
+    modeldir = output_path.joinpath("models", *modeldir.parts[2:])
+    scoresdir = output_path.joinpath("scores", *scoresdir.parts[2:])
 
     sentence1_key, sentence2_key = task_to_keys[task]
 
@@ -211,11 +213,12 @@ def main():
             known_idxs = [263, 628]
         elif "multiberts_seed_1" in model_name_or_path_str:
             known_idxs = [218, 674]
-        else:
-            for i in known_idxs:
-                if not i in idxs:
-                    idxs.append(i)
 
+        for idx in known_idxs:
+            if idx not in idxs:
+                idxs.append(idx)
+
+        idxs = [218, 674]
         param_groups = [[]] + list(combinations(idxs, 1))  # + list(combinations(idxs, 2))
         if len(idxs) > 1:
             param_groups += [idxs]
@@ -229,7 +232,7 @@ def main():
                 param_group_string = (
                     str(param_group).replace("[", "").replace("]", "").replace(", ", "_")
                 )
-                model = model.from_pretrained(modeldir)
+                model = model.from_pretrained(model_name_or_path)
                 model = zero_last_param_(
                     model,
                     param_group,
@@ -249,7 +252,7 @@ def main():
                 layer_id_out[param_group_string] = results
 
         scoresdir.mkdir(exist_ok=True, parents=True)
-        scores_filename = f"layer_size_{layer_range_length}_results.json"
+        scores_filename = f"layer_size_{layer_range_length}_results_{task}.json"
         with open(scoresdir / scores_filename, "w") as scores_save_file:
             json.dump(out, scores_save_file)
 

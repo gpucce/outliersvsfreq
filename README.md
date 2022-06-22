@@ -3,7 +3,7 @@
 
 Create and activate a conda environment with 
 ```
-conda env create -f environment.yaml
+conda env create -f environment.yml
 conda activate outliersvsfreq
 ```
 To replicate the fine tuning of multiberts checkpoints move to the multiberts folder and run the download script this will take some disk space (~15gb or more):
@@ -69,3 +69,7 @@ and for _ONE\_SEP_ to
     --few_special_tokens true
 ```
 
+>**_NOTE:_** You may need to install a model for Spacy to work 
+```
+python -m spacy download "en_core_web_sm"
+```
