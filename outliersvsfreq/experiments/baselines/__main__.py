@@ -217,7 +217,7 @@ def main():
 
         # for faster paper replicability
         idxs = known_idxs
-        param_groups = [[]] + list(combinations(idxs, 1))  # + list(combinations(idxs, 2))
+        param_groups = [[]] + [list(i) for i in combinations(idxs, 1)]  # + [list(i) for i in combinations(idxs, 2)]
         if len(idxs) > 1:
             param_groups += [idxs]
 
@@ -250,7 +250,7 @@ def main():
                 layer_id_out[param_group_string] = results
 
         scoresdir.mkdir(exist_ok=True, parents=True)
-        scores_filename = f"n_layers_with_hidden_outliers_{layer_range_length}_results_{task}.json"
+        scores_filename = f"n_layers_with_hidden_outliers_{layer_range_length}_results.json"
         with open(scoresdir / scores_filename, "w") as scores_save_file:
             json.dump(out, scores_save_file)
 
