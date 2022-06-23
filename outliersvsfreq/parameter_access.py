@@ -81,7 +81,10 @@ def get_outliers(model, model_type, wob="weight", n_std=3):
 
 
 def pinpoint_outliers_by_type(
-    model, model_type, wob, n_std=3,
+    model,
+    model_type,
+    wob,
+    n_std=3,
 ):
     which, howmany = get_outliers(model, model_type=model_type, wob=wob, n_std=n_std)
     n2c = {i: j for i, j in zip(which, howmany) if j > 3}
@@ -89,11 +92,12 @@ def pinpoint_outliers_by_type(
 
 
 def pinpoint_outliers(model, model_type, n_std=3):
-    w_n2c = pinpoint_outliers_by_type(
-        model, model_type=model_type, wob="weight", n_std=n_std
-    )
+    w_n2c = pinpoint_outliers_by_type(model, model_type=model_type, wob="weight", n_std=n_std)
     b_n2c = pinpoint_outliers_by_type(
-        model, model_type=model_type, wob="bias", n_std=n_std,
+        model,
+        model_type=model_type,
+        wob="bias",
+        n_std=n_std,
     )
 
     min_len = min(len(w_n2c), len(b_n2c))

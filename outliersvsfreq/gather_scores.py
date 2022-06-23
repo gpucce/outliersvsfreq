@@ -109,7 +109,7 @@ def gather_scores(path, exclude=[], include=[], include_or=[], name=""):
 
     dfs = dict()
 
-    for task in scores.keys():
+    for task in scores:
         dfs[task] = pd.DataFrame(scores[task], index=indices[task], columns=[task])
     return dfs
 

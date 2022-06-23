@@ -21,13 +21,13 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument(
-        "--model_name_name_or_path",
+        "--model_name_or_path",
         choices=["bert-base-uncased", "roberta-base"],
         default="bert-base-uncased",
     )
     args = parser.parse_args()
 
-    model_name = args.model_name
+    model_name = args.model_name_or_path
     model = AutoModelForMaskedLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name, fast=True)
     idxs_groups = (
@@ -46,7 +46,7 @@ def main():
 
     ds = load_dataset("glue", "mnli")
     for i in ds:
-        ds[i] = ds[i].select(range(1000))
+        ds[i] = ds[i].select(range(min(30000, ds[i].num_rows)))
     encoded_ds = ds.map(
         lambda row: tokenizer(
             row["premise"], padding="max_length", truncation=True, max_length=max_length
@@ -72,7 +72,7 @@ def main():
 
     trainer.get_full_generation_output(idxs_groups, max_length=max_length)
 
-    word_counts_path = Path("output/data_experiments/word_counts/")
+    word_counts_path = Path("word_counts/")
     with open(word_counts_path / f"{model_name}_wiki_word_counts.json") as wiki_counts_file:
         wiki_counts = json.load(wiki_counts_file)
     with open(word_counts_path / f"{model_name}_book_corpus_word_counts.json") as book_counts_file:

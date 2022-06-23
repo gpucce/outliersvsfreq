@@ -6,7 +6,6 @@ from itertools import combinations
 import numpy as np
 
 from datasets import load_dataset, load_metric
-from tqdm import tqdm
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -63,7 +62,9 @@ def main():
     parser.add_argument("--max_length", type=int, default=256, help="Choose the max length")
     parser.add_argument("--lr", type=float, default=2.0e-5)
     parser.add_argument("--layer_range_length", type=int, default=12)
-    parser.add_argument("--check_all_idxs", type=bool, default=False)
+    parser.add_argument("--idxs_to_check", choices=["all", "top"], default="top")
+    parser.add_argument("--output_path", type=str)
+    parser.add_argument("--run_type", type=str, choices=["test", "full"], default="full")
 
     args = parser.parse_args()
 
@@ -71,17 +72,21 @@ def main():
     max_length = args.max_length
     random_seed = args.random_seed
     set_seed(random_seed)
-    check_all_idxs = args.check_all_idxs
+    check_all_idxs = args.idxs_to_check == "all"
     lr = args.lr
     task = args.task
     layer_range_length = args.layer_range_length
     model_name_or_path = args.model_name_or_path
+    is_test_run = args.run_type == "test"
 
     train_batch_size = args.train_batch_size
     eval_batch_size = args.eval_batch_size
 
     actual_task = "mnli" if task == "mnli-mm" else task
     dataset = load_dataset("glue", actual_task)
+    if is_test_run:
+        for i in dataset:
+            dataset[i] = dataset[i].select(range(min(dataset[i].num_rows, 2000)))
     metric = load_metric("glue", actual_task)
 
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
@@ -100,22 +105,14 @@ def main():
     }
 
     ##### tokenization_parameters
-    output_path = Path("output/baselines")
-    if not Path(model_name_or_path).exists():
-        model_and_score_file_info = actual_task
-        model_and_score_file_info += f"_max_length_{max_length}"
-        model_and_score_file_info += f"_lr_{lr}"
-        model_and_score_file_info += f"_batch_size_{train_batch_size}"
-        model_and_score_file_info += f"_random_seed_{random_seed}"
-        model_last_dir = f"{model_name_or_path}_" + model_and_score_file_info
-        modeldir = Path("models") / model_last_dir
-        scoresdir = Path("scores") / model_last_dir
-    else:
-        modeldir = Path(model_name_or_path)
-        scoresdir = Path(str(model_name_or_path).replace("/models/", "/scores/"))
+    model_and_score_file_info = f"max_length_{max_length}"
+    model_and_score_file_info += f"_lr_{lr}"
+    model_and_score_file_info += f"_batch_size_{train_batch_size}"
+    model_and_score_file_info += f"_random_seed_{random_seed}"
 
-    modeldir = output_path.joinpath("models", *modeldir.parts[2:])
-    scoresdir = output_path.joinpath("scores", *scoresdir.parts[2:])
+    output_path = Path("output/baselines") if not is_test_run else Path("output/baselines/tests")
+    modeldir = output_path / "models" / args.output_path / task
+    scoresdir = output_path / "scores" / args.output_path / task
 
     sentence1_key, sentence2_key = task_to_keys[task]
 
@@ -197,7 +194,7 @@ def main():
     elif not do_train:
         idxs = choose_outlier_for_finetuning(
             model,
-            n_std=2,
+            n_std=2.5,
             model_type="LM",
             topk=10,
         )
@@ -205,7 +202,7 @@ def main():
         model_name_or_path_str = str(model_name_or_path)
         if check_all_idxs:
             known_idxs = range(model.config.hidden_size)
-        elif model_name_or_path_str == "bert-base-uncased":
+        elif "bert-base-uncased" in model_name_or_path_str:
             known_idxs = [308, 381]
         elif "roberta-base" in model_name_or_path_str:
             known_idxs = [77, 588]
@@ -218,7 +215,8 @@ def main():
             if idx not in idxs:
                 idxs.append(idx)
 
-        idxs = [218, 674]
+        # for faster paper replicability
+        idxs = known_idxs
         param_groups = [[]] + list(combinations(idxs, 1))  # + list(combinations(idxs, 2))
         if len(idxs) > 1:
             param_groups += [idxs]
@@ -232,7 +230,7 @@ def main():
                 param_group_string = (
                     str(param_group).replace("[", "").replace("]", "").replace(", ", "_")
                 )
-                model = model.from_pretrained(model_name_or_path)
+                model = model.from_pretrained(modeldir)
                 model = zero_last_param_(
                     model,
                     param_group,
@@ -252,7 +250,7 @@ def main():
                 layer_id_out[param_group_string] = results
 
         scoresdir.mkdir(exist_ok=True, parents=True)
-        scores_filename = f"layer_size_{layer_range_length}_results_{task}.json"
+        scores_filename = f"n_layers_with_hidden_outliers_{layer_range_length}_results_{task}.json"
         with open(scoresdir / scores_filename, "w") as scores_save_file:
             json.dump(out, scores_save_file)
 

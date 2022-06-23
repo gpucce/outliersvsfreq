@@ -28,6 +28,7 @@ To then run all experiments in the paper except the bert-medium pretraining use
 python -m outliersvsfreq.experiments.outlier_correlation --model_name_or_path bert-base-uncased
 python -m outliersvsfreq.experiments.mlm_loss --model_name_or_path bert-base-uncased
 python -m outliersvsfreq.experiments.data_experiments --model_name_or_path bert-base-uncased
+python -m outliersvsfreq.experiments.data_experiments --model_name_or_path bert-base-uncased
 ```
 
 All the plots in the paper should be replicable using the `paper_plots.ipynb` notebook

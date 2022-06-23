@@ -1,19 +1,20 @@
-from transformers import ViTModel
 from copy import deepcopy
+from functools import reduce
+import datetime
+
 
 import torch
 from torch.nn import Module, Linear, CrossEntropyLoss
 
-from functools import reduce
-
+from transformers import ViTModel
 
 from .parameter_access import get_layers
-import datetime
+
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 __all__ = [
-    "MASK_STRAT_EXCEPT",
+    "MASK_STRTG_EXCEPT",
     "MyViT",
     "replace_weight_name",
     "smart_init_",
@@ -25,6 +26,7 @@ __all__ = [
 ]
 
 MASK_STRTG_EXCEPT = Exception('Masking stategy can only be "random" or "deterministic".')
+
 
 class MyViT(Module):
     def __init__(self, nclasses):
@@ -92,12 +94,12 @@ def self_generate_sents(model, loc_tokenizer, sents, start_idx=0, end_idx=None):
     atts = []
     model.to(device)
     for sent in sents:
-        input = {
+        linput = {
             i: j[:, start_idx:end_idx].to(device)
             for i, j in loc_tokenizer(sent, return_tensors="pt", padding=True).items()
         }
-        out = model(**input, output_attentions=True)
-        out_logit = out.logits[input["attention_mask"] != 0].argmax(-1).detach().cpu()
+        out = model(**linput, output_attentions=True)
+        out_logit = out.logits[linput["attention_mask"] != 0].argmax(-1).detach().cpu()
         outs.append(loc_tokenizer.decode(out_logit))
         atts.append([i.detach().cpu() for i in out.attentions])
     model.to("cpu")

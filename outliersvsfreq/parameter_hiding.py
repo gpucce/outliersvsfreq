@@ -1,5 +1,6 @@
-from .parameter_access import get_layers
 import torch
+from .parameter_access import get_layers
+
 
 __all__ = [
     "zero_param_",

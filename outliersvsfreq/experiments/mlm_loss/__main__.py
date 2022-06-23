@@ -12,7 +12,6 @@ from transformers import (
     Trainer,
 )
 
-import torch
 from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
 from outliersvsfreq.parameter_hiding import zero_last_param_
 

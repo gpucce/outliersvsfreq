@@ -154,13 +154,14 @@ class DataTrainingArguments:
         default=False, metadata={"help": "Tries to remove token distribution from the input."}
     )
     is_test: bool = field(
-        default=False, metadata={"help": "Runs a test run instead of a full one."}
+        default=False, metadata={"help": "Runs a test run instead of a full one."},
+        dest="feature", action="store_true"
     )
     do_split_in_sentences: bool = field(
         default=True, metadata={"help": "Use or not spacy sentencizer to split in sentences."}
     )
     few_special_tokens: bool = field(
-        default=False, metadata={"help": "If true only add [SEP] at the end of sequence."}
+        default=False, metadata={"help": "If true only add [SEP] at the end of sequence."},
     )
 
 
