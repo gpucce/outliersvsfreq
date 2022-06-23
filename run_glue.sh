@@ -26,8 +26,7 @@ do
         --train_batch_size 32 \
         --layer_range_length 12 \
         --random_seed 42 \
-        --lr 2.e-5 \
-        --run_type test
+        --lr 2.e-5
 
     if [[ $task == *"mnli"* ]]
     then
@@ -39,7 +38,6 @@ do
             --train_batch_size 32 \
             --layer_range_length 1 \
             --lr 2.e-5 \
-            --random_seed 42 \
-            --run_type test
+            --random_seed 42
     fi
 done
