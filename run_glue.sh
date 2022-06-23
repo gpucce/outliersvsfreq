@@ -14,7 +14,7 @@ do
             --train_batch_size 32 \
             --random_seed 42 \
             --lr 2.e-5 \
-            --output_path $1 \
+            --output_path $1
     fi
 
     echo "test ${task}"
