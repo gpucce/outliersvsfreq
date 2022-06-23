@@ -1,4 +1,4 @@
-# Repository for the paper [Outliers Dimensions that Disrupt Transformers Are Driven by Frequency](https://arxiv.org/abs/2205.11380)
+# Repository for the paper _Outliers Dimensions that Disrupt Transformers Are Driven by Frequency_
 
 
 Create and activate a conda environment with 

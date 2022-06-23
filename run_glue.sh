@@ -1,5 +1,4 @@
-# tasks=(mnli mnli-mm mrpc sst2 qqp qnli stsb cola rte)
-tasks=(rte mnli)
+tasks=(mnli mnli-mm mrpc sst2 qqp qnli stsb cola rte)
 
 for task in ${tasks[@]}
 do
