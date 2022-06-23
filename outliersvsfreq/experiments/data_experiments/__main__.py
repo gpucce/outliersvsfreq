@@ -45,8 +45,6 @@ def main():
     generation_out_dir.mkdir(parents=True, exist_ok=True)
 
     ds = load_dataset("glue", "mnli")
-    for i in ds:
-        ds[i] = ds[i].select(range(min(30000, ds[i].num_rows)))
     encoded_ds = ds.map(
         lambda row: tokenizer(
             row["premise"], padding="max_length", truncation=True, max_length=max_length
