@@ -246,10 +246,6 @@ def main():
         load_dataset("bookcorpus", cache_dir=model_args.cache_dir)["train"],
     ]
 
-    if is_test:
-        joint_datasets[0] = joint_datasets[0].select(range(10000))
-        joint_datasets[1] = joint_datasets[1].select(range(100000))
-
     raw_datasets = concatenate_datasets(joint_datasets).train_test_split(test_size=0.1)
     raw_datasets["validation"] = raw_datasets["test"]
     del raw_datasets["test"]

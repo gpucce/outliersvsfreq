@@ -48,8 +48,6 @@ elif model_name_or_path == "bert-base-uncased":
 ud = load_dataset("wikitext", "wikitext-2-v1")
 ud = ud.filter(lambda x: len(x["text"]) > 70)
 ud = ud.shuffle(42)
-for i in ud:
-    ud[i] = ud[i].select(range(1000))
 
 encoded_ds = ud.map(
     lambda x: tokenizer(x["text"], padding="max_length", max_length=128, truncation=True)

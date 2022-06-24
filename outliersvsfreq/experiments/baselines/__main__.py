@@ -84,8 +84,6 @@ def main():
 
     actual_task = "mnli" if task == "mnli-mm" else task
     dataset = load_dataset("glue", actual_task)
-    for i in dataset:
-        dataset[i] = dataset[i].select(range(min(dataset[i].num_rows, 2000) if is_test_run else dataset[i].num_rows))
     metric = load_metric("glue", actual_task)
 
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
