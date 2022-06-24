@@ -1,7 +1,7 @@
 #!/bin/bash
 
 model_dir="/data/evaled/mberts_1/checkpoints/"
-tasks=(mnli-mm)
+tasks=(mnli mnli-mm)
 
 models=()
 for i in $(ls $model_dir)
