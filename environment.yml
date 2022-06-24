@@ -1,4 +1,4 @@
-name: outliersvsfreq_test_env
+name: outliersvsfreq
 channels:
   - pytorch
   - huggingface
