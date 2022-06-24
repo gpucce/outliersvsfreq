@@ -45,7 +45,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--step", type=str, default="train", choices=["train", "test"])
     parser.add_argument("--cifar_data", type=str, default="10", choices=["10", "100"])
-    parser.add_argument("--n_epochs", type=int, default=5)
+    parser.add_argument("--n_epochs", type=int, default=8)
     parser.add_argument("--indir", type=str, default=None)
     parser.add_argument("--outdir", type=str, default=None)
     args = parser.parse_args()

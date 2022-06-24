@@ -30,7 +30,7 @@ bash run_glue.sh bert-base-uncased
 
 Then run all experiments in the paper except the bert-medium pretraining use
 ```
-bash run_all.sh
+bash run_experiments.sh
 ```
 inspect the file to see which experiments are run.
 
