@@ -1,4 +1,4 @@
-name: outliersvsfreq
+name: outliersvsfreq_test_env
 channels:
   - pytorch
   - huggingface
@@ -7,9 +7,9 @@ channels:
 dependencies:
   - python=3.8
   - pip=21.2.4
-  - cudatoolkit=11.3
-  - pytorch
-  - torchvision
+  - cudatoolkit
+  - pytorch=1.10
+  - torchvision=0.11.2
   - torchaudio
   - torchmetrics
   - ipykernel

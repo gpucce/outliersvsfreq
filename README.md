@@ -15,7 +15,12 @@ then, go back to the main directory and run:
 bash run_multiberts.sh
 ```
 
-To replicate the results in the paper first run:
+To replicate the results on VIT run:
+```
+bash run_vit.sh
+```
+
+To replicate the remaining results in the paper first run:
 
 ```
 bash run_glue.sh bert-base-uncased
@@ -23,10 +28,11 @@ bash run_glue.sh bert-base-uncased
 
 > **_NOTE:_** This runs all the fine-tuning for bert-base-uncased and all the experiment zeroing outliers out, it takes a long time to run.
 
-To then run all experiments in the paper except the bert-medium pretraining use
+Then run all experiments in the paper except the bert-medium pretraining use
 ```
 bash run_all.sh
 ```
+inspect the file to see which experiments are run.
 
 All the plots in the paper should be replicable using the `paper_plots.ipynb` notebook
 

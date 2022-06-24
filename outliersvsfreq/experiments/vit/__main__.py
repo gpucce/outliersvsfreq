@@ -1,0 +1,307 @@
+
+import random
+import os
+import json
+from copy import deepcopy
+from itertools import accumulate, combinations
+
+from datasets import load_metric
+from transformers.optimization import get_cosine_schedule_with_warmup
+from transformers import (
+    ViTForImageClassification,
+    ViTFeatureExtractor,
+    Trainer,
+    TrainingArguments,
+)
+
+from outliersvsfreq.parameter_hiding import zero_vit_param_
+from outliersvsfreq.parameter_access import choose_outlier_for_finetuning
+
+from pathlib import Path
+
+import numpy as np
+import torch
+from torch.optim import SGD
+import torchvision
+from torchvision.transforms import (
+    CenterCrop,
+    Compose,
+    Normalize,
+    RandomHorizontalFlip,
+    RandomResizedCrop,
+    Resize,
+    ToTensor,
+)
+
+from argparse import ArgumentParser
+from datetime import datetime
+
+
+
+def main():
+
+    torch.manual_seed(42)
+
+    parser = ArgumentParser()
+    parser.add_argument("--step", type=str, default="train", choices=["train", "test"])
+    parser.add_argument("--cifar_data", type=str, default="10", choices=["10", "100"])
+    parser.add_argument("--n_epochs", type=int, default=5)
+    parser.add_argument("--indir", type=str, default=None)
+    parser.add_argument("--outdir", type=str, default=None)
+    args = parser.parse_args()
+
+    outdir = args.outdir
+    indir = args.indir
+    do_train = args.step == "train"
+    cifar_data = args.cifar_data
+    n_epochs = args.n_epochs
+
+
+
+    DOWNLOAD_PATH = "data"
+    BATCH_SIZE_TRAIN = 256
+    BATCH_SIZE_TEST = 256
+
+
+    if cifar_data == "100":
+        with open("outliersvsfreq/experiments/vit/cifar100_labels2idx.json") as labelsfile:
+            labels2idx = json.load(labelsfile)
+    elif cifar_data == "10":
+        labels2idx = {
+            "airplane": 0,
+            "automobile": 1,
+            "bird": 2,
+            "cat": 3,
+            "deer": 4,
+            "dog": 5,
+            "frog": 6,
+            "horse": 7,
+            "ship": 8,
+            "truck": 9,
+        }
+
+    idx2labels = {j: i for i, j in labels2idx.items()}
+    feature_extractor = ViTFeatureExtractor.from_pretrained(
+        "google/vit-base-patch16-224-in21k", 
+        idx2labels=idx2labels, 
+        labels2idx=labels2idx
+    )
+
+    device = "cuda"
+    metric = load_metric("accuracy")
+
+    normalize = Normalize(
+        mean=feature_extractor.image_mean, std=feature_extractor.image_std
+    )
+    _train_transforms = Compose(
+        [
+            RandomResizedCrop(feature_extractor.size),
+            RandomHorizontalFlip(),
+            ToTensor(),
+            normalize,
+        ]
+    )
+    _val_transforms = Compose(
+        [
+            Resize(feature_extractor.size),
+            CenterCrop(feature_extractor.size),
+            ToTensor(),
+            normalize,
+        ]
+    )
+
+    if cifar_data == "100":
+
+        train_set = torchvision.datasets.CIFAR100(
+            DOWNLOAD_PATH,
+            train=True,
+            download=True,
+            # transform=transform_mnist,
+            transform=_train_transforms,
+            target_transform=lambda x: {"labels": x},
+        )
+
+        test_set = torchvision.datasets.CIFAR100(
+            DOWNLOAD_PATH,
+            train=False,
+            download=True,
+            transform=_val_transforms,
+            target_transform=lambda x: {"labels": x},
+        )
+
+        mymodel = ViTForImageClassification.from_pretrained(
+            "google/vit-base-patch16-224-in21k", 
+            num_labels=100,
+            id2label=idx2labels, 
+            label2id=labels2idx
+        )
+
+    elif cifar_data == "10":
+
+        train_set = torchvision.datasets.CIFAR10(
+            DOWNLOAD_PATH,
+            train=True,
+            download=True,
+            transform=_train_transforms,
+            target_transform=lambda x: {"labels": x},
+        )
+
+        test_set = torchvision.datasets.CIFAR10(
+            DOWNLOAD_PATH,
+            train=False,
+            download=True,
+            transform=_val_transforms,
+            target_transform=lambda x: {"labels": x},
+        )
+
+        mymodel = ViTForImageClassification.from_pretrained(
+            "google/vit-base-patch16-224-in21k", 
+            num_labels=10, 
+            id2label=idx2labels, 
+            label2id=labels2idx
+        )
+
+    dsname = str(train_set).split("\n")[0].split()[1].lower()
+
+    def mycollate(x):
+        i1 = {
+            "pixel_values": torch.cat(
+                # [sample[0]["pixel_values"].unsqueeze(0) for sample in x], axis=0
+                [sample[0].unsqueeze(0) for sample in x],
+                axis=0,
+            )
+        }
+        i2 = {"labels": torch.tensor([sample[1]["labels"] for sample in x])}
+        return {**i1, **i2}
+
+
+    def compute_metrics(eval_pred):
+        predictions, labels = eval_pred
+        predictions = np.argmax(predictions, axis=1)
+        return metric.compute(predictions=predictions, references=labels)
+
+
+    if outdir == None:
+        outdir = Path("output")
+        outdir /= "vit"
+        outdir /= dsname
+        outdir /= f"trainer_output_nepochs_{n_epochs}_{datetime.now()}"
+
+    args = TrainingArguments(
+        output_dir=outdir,
+        per_device_train_batch_size=BATCH_SIZE_TRAIN,
+        per_device_eval_batch_size=BATCH_SIZE_TEST,
+        save_steps=2000,
+        logging_steps=10,
+        metric_for_best_model="accuracy",
+        overwrite_output_dir=True,
+        num_train_epochs=n_epochs,
+        warmup_ratio=0.1,
+        learning_rate=0.0001 if dsname == "cifar100" else 2.e-5,
+        lr_scheduler_type="cosine",
+        gradient_accumulation_steps=1,
+        max_grad_norm=1,
+        weight_decay=0,
+        evaluation_strategy="epoch",
+        remove_unused_columns=False,
+    )
+
+    decay_parameters = [n for n, p in mymodel.named_parameters() if "layernorm" not in n]
+    decay_parameters = [name for name in decay_parameters if "bias" not in name]
+    optimizer_grouped_parameters = [
+        {
+            "params": [p for n, p in mymodel.named_parameters() if n in decay_parameters],
+            "weight_decay": args.weight_decay,
+        },
+        {
+            "params": [
+                p for n, p in mymodel.named_parameters() if n not in decay_parameters
+            ],
+            "weight_decay": 0.0,
+        },
+    ]
+
+    optimizer = SGD(
+        optimizer_grouped_parameters,
+        args.learning_rate,
+        momentum=0.9,
+        weight_decay=args.weight_decay,
+    )
+
+    n_samples = len(train_set)
+    n_steps = n_samples / args.train_batch_size
+
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer, int(n_steps * args.warmup_ratio), int(n_steps)
+    )
+
+    trainer = Trainer(
+        mymodel,
+        args=args,
+        train_dataset=train_set,
+        eval_dataset=test_set,
+        data_collator=mycollate,
+        compute_metrics=compute_metrics,
+        tokenizer=feature_extractor,
+        # optimizers=(optimizer, scheduler),
+    )
+
+    if do_train:
+        trainer.train(resume_from_checkpoint=False)
+        trainer.save_model()
+        trainer.save_state()
+    else:
+        trainer.model = trainer.model.from_pretrained(indir)
+
+    basemodel = deepcopy(trainer.model)
+
+    idxs = choose_outlier_for_finetuning(basemodel.to("cpu"), model_type='vit')
+
+    basemodel.to("cuda")
+
+    settings_accuracies = dict()
+
+    param_settings = list(combinations(idxs, 1)) + list(combinations(idxs, 2)) + [[]]
+    if len(idxs) > 1:
+        param_settings += [idxs]
+    param_settings = [[j for j in i] for i in param_settings]
+    param_settings += ["random"]
+
+    # %%
+    for param_setting in param_settings:
+        if param_setting == "random":
+            for i in range(2):
+                accs = []
+                for _ in range(5):
+                    trainer.model = deepcopy(basemodel)
+                    zero_vit_param_(
+                        trainer.model,
+                        idxs=random.sample(set(range(768)).difference(idxs), i + 1),
+                    )
+                    outdict = trainer.evaluate()
+                    accs.append(outdict["eval_accuracy"])
+                settings_accuracies[param_setting + f"_len_{i+1}"] = np.mean(accs).item()
+            print(
+                param_setting + f"_len_{i+1}",
+                settings_accuracies[param_setting + f"_len_{i+1}"],
+            )
+        else:
+            trainer.model = deepcopy(basemodel)
+            zero_vit_param_(trainer.model, idxs=param_setting)
+            outdict = trainer.evaluate()
+            settings_accuracies["_".join([str(i) for i in param_setting])] = outdict[
+                "eval_accuracy"
+            ]
+            print(
+                "_".join([str(i) for i in param_setting]),
+                settings_accuracies["_".join([str(i) for i in param_setting])],
+            )
+
+    save_dir = outdir if do_train else indir
+    outeval_file_path = os.path.join(save_dir, "eval_output.json")
+    with open(outeval_file_path, "w") as outeval_file:
+        json.dump(settings_accuracies, outeval_file)
+
+
+if __name__ == "__main__":
+    main()

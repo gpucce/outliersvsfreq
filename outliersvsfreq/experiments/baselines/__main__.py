@@ -108,7 +108,7 @@ def main():
     model_and_score_file_info += f"_random_seed_{random_seed}"
 
     output_path = Path("output/baselines") if not is_test_run else Path("output/baselines/tests")
-    modeldir = output_path / "models" / args.output_path / task
+    modeldir = output_path / "models" / args.output_path / actual_task
     scoresdir = output_path / "scores" / args.output_path / task
 
     sentence1_key, sentence2_key = task_to_keys[task]
