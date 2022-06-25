@@ -44,10 +44,11 @@ def main():
     generation_out_dir = out_dir / "generation_output"
     generation_out_dir.mkdir(parents=True, exist_ok=True)
 
-    ds = load_dataset("glue", "mnli")
+    ds = load_dataset("wikitext", "wikitext-103-v1")
+    ds['train'] = ds['train'].select(range(20000))
     encoded_ds = ds.map(
         lambda row: tokenizer(
-            row["premise"], padding="max_length", truncation=True, max_length=max_length
+            row["text"], padding="max_length", truncation=True, max_length=max_length
         ),
         batched=True,
     )
@@ -64,7 +65,7 @@ def main():
         model,
         args,
         train_dataset=encoded_ds["train"],
-        eval_dataset=encoded_ds["validation_matched"],
+        eval_dataset=encoded_ds["validation"],
         tokenizer=tokenizer,
     )
 
